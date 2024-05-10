@@ -8,12 +8,17 @@
 using namespace std;
 
 typedef long long ll;
+typedef vector<pair<ll,string>> vls;
 
-pair<ll,string> findBestWord(vector<pair<ll,string>> holyWords, vector<vector<bool>> possibleLetters, vector<int> letterCounts);
+pair<ll,string> findBestWord(vls holyWords, vector<vector<bool>> possibleLetters, vector<int> letterCounts, bool useOnlyHolyWords);
 
-int solveWordle(vector<pair<ll,string>> holyWords, string solution);
+int solveWordle(vls holyWords, string solution, bool useOnlyHolyWords);
+
+vls parseText(string fileName, unordered_set<string> wordleSolutions, unordered_set<string> wordleGuesses);
 
 int main(){
+    bool useOnlyHolyWords = true;
+
     //input wordle words
     unordered_set<string> wordleSolutions;
     unordered_set<string> wordleGuesses;
@@ -43,41 +48,86 @@ int main(){
     }
     wordleStream.close();
 
-    //open input file stream to bible
-    ifstream bibleStream;
-    bibleStream.open("asv-bible.txt");
-    if (bibleStream.fail()){
-        cout << "Bible not available\n";
+    
+    ifstream fileNames;
+    fileNames.open("bible-list.txt");
+    if (fileNames.fail()){
+        cout << "bible-list.txt not available\n";
         return 0;
     }
 
-    //input all five letter words from bible
-    map<string,ll> holyWordsMap;
-    while (bibleStream >> word){
-        if (word.length() == 5){
-            bool valid = true;
-            for (ll i = 0; i < 5; i ++){
-                if (!isalpha(word[i])){
-                    valid = false;
-                }
-                if (isupper(word[i])){
-                    word[i] = tolower(word[i]);
+    string fileName;
+    while (fileNames >> fileName){
+
+        //parse all 5 letter words from given holy text
+        vls holyWords = parseText(fileName,wordleSolutions,wordleGuesses);
+        
+
+        int guessSum = 0;
+        int successAmount = 0;
+        int wordAmount = 0;
+        int winAmount = 0;
+        int errorAmount = 0;
+        for (auto it = wordleSolutions.begin(); it != wordleSolutions.end(); it ++){
+            int guessAmount = solveWordle(holyWords, *it, useOnlyHolyWords);
+            if (guessAmount == -1){
+                errorAmount ++;
+            }
+            else {
+                guessSum += guessAmount;
+                successAmount ++;
+                if (guessAmount <= 6){
+                    winAmount ++;
                 }
             }
-            if (valid && wordleGuesses.count(word)){
-                if (holyWordsMap.count(word) == 0){
-                    holyWordsMap[word] = 1;
-                }
-                else {
-                    holyWordsMap[word] ++;
-                }
+            wordAmount ++;
+        }
+
+        cout << fileName << ":\n";
+        cout << "\tAverage score: " << ((double)guessSum)/successAmount << "\n";
+        cout << "\tWin amount: " << winAmount << "/" << wordAmount << " (" << 100*winAmount/wordAmount << "%)" << "\n";
+        cout << "\tErrors: " << errorAmount << "\n\n";
+    
+    }
+
+    fileNames.close();
+
+    return 0;
+}
+
+vls parseText(string fileName, unordered_set<string> wordleSolutions, unordered_set<string> wordleGuesses){
+    //open input file stream to holy text
+    ifstream inStream;
+    inStream.open(fileName);
+    if (inStream.fail()){
+        cout << fileName << " not available\n";
+        return vls();
+    }
+    
+    //input all five letter words from holy text
+    string inputWord;
+    map<string,ll> holyWordsMap;
+    while (inStream >> inputWord){
+        string word = "";
+        //remove letters from word, make lowercase
+        for (size_t i = 0; i < inputWord.length(); i ++){
+            if (isalpha(inputWord[i])){
+                word += tolower(inputWord[i]);
+            }
+        }
+        if (word.length() == 5 && wordleGuesses.count(word)){
+            if (holyWordsMap.count(word) == 0){
+                holyWordsMap[word] = 1;
+            }
+            else {
+                holyWordsMap[word] ++;
             }
         }
     }
-    bibleStream.close();
+    inStream.close();
 
     //put all words into a vector
-    vector<pair<ll,string>> holyWords;
+    vls holyWords;
     for (auto it = holyWordsMap.begin(); it != holyWordsMap.end(); it ++){
         holyWords.push_back({it->second,it->first});
     }
@@ -88,29 +138,10 @@ int main(){
     }
     sort(holyWords.rbegin(),holyWords.rend());
 
-    
-    
-    
-
-    int guessSum = 0;
-    int wordAmount = 0;
-    int winAmount = 0;
-    for (auto it = wordleSolutions.begin(); it != wordleSolutions.end(); it ++){
-        int guessAmount = solveWordle(holyWords, *it);
-        guessSum += guessAmount;
-        wordAmount ++;
-        if (guessAmount <= 6){
-            winAmount ++;
-        }
-    }
-
-    cout << "Average score: " << guessSum/wordAmount << "\n";
-    cout << "Win amount: " << winAmount << "/" << wordAmount << " (" << 100*winAmount/wordAmount << "%)" << "\n";
-
-    return 0;
+    return holyWords;
 }
 
-int solveWordle(vector<pair<ll,string>> holyWords, string solution){
+int solveWordle(vls holyWords, string solution, bool useOnlyHolyWords){
     vector<vector<bool>> possibleLetters(5, vector<bool>(26, true));
     vector<int> letterCounts(26, 0);
 
@@ -118,7 +149,7 @@ int solveWordle(vector<pair<ll,string>> holyWords, string solution){
     int guessAmount = 0;
     while (!guessed){
         guessAmount ++;
-        pair<ll,string> bestGuess = findBestWord(holyWords, possibleLetters, letterCounts);
+        pair<ll,string> bestGuess = findBestWord(holyWords, possibleLetters, letterCounts, useOnlyHolyWords);
         string nextGuess = bestGuess.second;
 
         if (nextGuess == "xxxxx"){
@@ -155,7 +186,7 @@ int solveWordle(vector<pair<ll,string>> holyWords, string solution){
     return guessAmount;
 }
 
-pair<ll,string> findBestWord(vector<pair<ll,string>> holyWords, vector<vector<bool>> possibleLetters, vector<int> letterCounts){
+pair<ll,string> findBestWord(vls holyWords, vector<vector<bool>> possibleLetters, vector<int> letterCounts, bool useOnlyHolyWords){
     for (size_t i = 0; i < holyWords.size(); i ++){
         bool valid = true;
         for (int x = 0; x < 5; x ++){
@@ -174,7 +205,7 @@ pair<ll,string> findBestWord(vector<pair<ll,string>> holyWords, vector<vector<bo
             }
         }
 
-        if (valid){
+        if (valid && (holyWords[i].first > 0 || !useOnlyHolyWords)){
             return holyWords[i];
         }
     }

@@ -1,0 +1,7 @@
+holy-texts/empty.txt
+holy-texts/asv-bible.txt
+holy-texts/kjv.txt
+holy-texts/English-Quran-plain-text.txt
+holy-texts/shakespeare.txt
+holy-texts/iliad.txt
+holy-texts/book-of-mormon.txt
