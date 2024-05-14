@@ -17,8 +17,6 @@ int solveWordle(vls holyWords, string solution, bool useOnlyHolyWords);
 vls parseText(string fileName, unordered_set<string> wordleSolutions, unordered_set<string> wordleGuesses);
 
 int main(){
-    bool useOnlyHolyWords = true;
-
     //input wordle words
     unordered_set<string> wordleSolutions;
     unordered_set<string> wordleGuesses;
@@ -61,32 +59,32 @@ int main(){
 
         //parse all 5 letter words from given holy text
         vls holyWords = parseText(fileName,wordleSolutions,wordleGuesses);
-        
 
-        int guessSum = 0;
-        int successAmount = 0;
-        int wordAmount = 0;
+
+        int solutionWordAmount = 0;
+        int solutionWordScoreSum = 0;
         int winAmount = 0;
-        int errorAmount = 0;
+        int wordAmount = 0;
         for (auto it = wordleSolutions.begin(); it != wordleSolutions.end(); it ++){
-            int guessAmount = solveWordle(holyWords, *it, useOnlyHolyWords);
-            if (guessAmount == -1){
-                errorAmount ++;
-            }
-            else {
-                guessSum += guessAmount;
-                successAmount ++;
-                if (guessAmount <= 6){
-                    winAmount ++;
-                }
-            }
             wordAmount ++;
-        }
 
+            int theistScore = solveWordle(holyWords, *it, true);
+            int agnosticScore = solveWordle(holyWords, *it, false);
+
+            if (theistScore != -1){
+                solutionWordAmount ++;
+                solutionWordScoreSum += theistScore;
+            }
+
+            if (agnosticScore > 0 && agnosticScore <= 6){
+                winAmount ++;
+            }
+        }
         cout << fileName << ":\n";
-        cout << "\tAverage score: " << ((double)guessSum)/successAmount << "\n";
-        cout << "\tWin amount: " << winAmount << "/" << wordAmount << " (" << 100*winAmount/wordAmount << "%)" << "\n";
-        cout << "\tErrors: " << errorAmount << "\n\n";
+        cout << "\tSolution words occurring: " << solutionWordAmount << "\n";
+        cout << "\tAverage holy word score: " << ((double)solutionWordScoreSum)/solutionWordAmount << "\n";
+        cout << "\tNumber of wins: " << winAmount << "/" << wordAmount << " (" << 100.0*winAmount/wordAmount << ")\n\n";
+        
     
     }
 
@@ -141,6 +139,7 @@ vls parseText(string fileName, unordered_set<string> wordleSolutions, unordered_
     return holyWords;
 }
 
+//returns amount of guesses taken, -1 if not solved
 int solveWordle(vls holyWords, string solution, bool useOnlyHolyWords){
     vector<vector<bool>> possibleLetters(5, vector<bool>(26, true));
     vector<int> letterCounts(26, 0);

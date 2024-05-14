@@ -21,12 +21,5 @@ A document is used to solve a Wordle problem in the following way:
 For every document given, the following data is found:
 - Solution words occurring: number of valid Wordle solutions that occur in the document
 - Average holy word score: average number of guesses taken when solving for each word in the document, solved theistically
-- Number of wins: amount of words that can be solved in six or less guesses, agnostically
+- Number of wins: amount of words that can be solved agnostically in six or less guesses
 
-
-
-asv-bible.txt - American Standard Version Bible
-
-wordle-La.txt - Words that can be guessed in Wordle and can be the solution
-
-wordle-Ta.txt - Words that can be guessed in Wordle but are never the solution
